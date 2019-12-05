@@ -10,9 +10,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // guessing
     //advent_2019::day_2::solve_params(advent_2019::day_2::INPUT_GRAVITY, 42, 59);
 
-    advent_2019::day_3::solve();
+    //advent_2019::day_3::solve();
 
-    advent_2019::day_4::solve(false);
-    advent_2019::day_4::solve(true);
+    //advent_2019::day_4::solve(false);
+    //advent_2019::day_4::solve(true);
+
+    advent_2019::day_5::solve();
     Ok(())
 }
