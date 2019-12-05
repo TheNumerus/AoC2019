@@ -28,6 +28,8 @@ pub fn solve() {
 
     let mut shortest = u32::MAX;
     let mut shortest_steps = usize::MAX;
+
+    dbg!(intersections.len());
     for intersection in &intersections {
         let dist = Point::manhattan_dist(&Point(0, 0), intersection.0);
         let steps = intersection.1 + intersection.2 + 2;
@@ -36,6 +38,8 @@ pub fn solve() {
             shortest_steps = steps;
         }
     }
+
+    dbg!(points_1.len(), points_2.len());
 
     println!("dist = {}", shortest);
     println!("steps = {}", shortest_steps);
@@ -56,18 +60,10 @@ impl Point {
         for step in steps {
             for _i in 0..step.len {
                 match step.dir {
-                    Left => {
-                        active_point.0 -= 1;
-                    },
-                    Right => {
-                        active_point.0 += 1;
-                    },
-                    Up => {
-                        active_point.1 += 1;
-                    },
-                    Down => {
-                        active_point.1 -= 1
-                    }
+                    Left => active_point.0 -= 1,
+                    Right => active_point.0 += 1,
+                    Up => active_point.1 += 1,
+                    Down => active_point.1 -= 1,
                 }
                 point_vec.push(active_point);
             }
