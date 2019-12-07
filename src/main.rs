@@ -17,6 +17,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     //advent_2019::day_5::solve();
 
-    advent_2019::day_6::solve()?;
+    //advent_2019::day_6::solve()?;
+
+    //advent_2019::day_7::solve();
+    advent_2019::day_7::solve_part_2();
     Ok(())
 }

@@ -1,10 +1,12 @@
 use std::convert::{TryFrom, TryInto};
+use std::io::{stdin, stdout, Read, Write, BufRead};
 
 pub fn solve_params(program: &str, par_1: isize, par_2: isize) {
     let mut program = generate_program(program);
     program[1] = par_1;
     program[2] = par_2;
-    let mut cpu = IntCodeComputer::new(program);
+    let stdin = stdin();
+    let mut cpu = IntCodeComputer::new(program, stdin.lock(), stdout());
     cpu.run();
     println!("program[0] = {}", cpu.memory[0]);
 }
@@ -13,22 +15,25 @@ pub fn generate_program(program: &str) -> Vec<isize> {
     program.split(",").map(|num| num.parse().unwrap()).collect()
 }
 
-pub struct IntCodeComputer {
+pub struct IntCodeComputer<I: Read + BufRead, O: Write> {
     pc: usize,
-    memory: Vec<isize>
+    memory: Vec<isize>,
+    pub halted: bool,
+    pub input: I,
+    pub output: O,
 }
 
-impl IntCodeComputer {
-    pub fn new(memory: Vec<isize>) -> IntCodeComputer {
-        IntCodeComputer{pc: 0, memory}
+impl<I: Read + BufRead, O: Write> IntCodeComputer<I, O> {
+    pub fn new(memory: Vec<isize>, input: I, output: O) -> IntCodeComputer<I, O> {
+        IntCodeComputer{pc: 0, memory, halted: false, input, output}
     }
 
     pub fn run(&mut self) {
         use Instr::*;
         let mut instr = self.fetch_decode();
-        loop {
+        while !self.halted {
             match instr {
-                Halt => break,
+                Halt => self.halt(),
                 Add(first_dir, second_dir) => self.add(first_dir, second_dir),
                 Mul(first_dir, second_dir) => self.mul(first_dir,  second_dir),
                 Read(direct) => self.read(direct),
@@ -40,6 +45,33 @@ impl IntCodeComputer {
             }
             instr = self.fetch_decode();
         }
+    }
+
+    pub fn run_interrupt(&mut self) {
+        use Instr::*;
+        let mut instr = self.fetch_decode();
+        while !self.halted {
+            match instr {
+                Halt => self.halt(),
+                Add(first_dir, second_dir) => self.add(first_dir, second_dir),
+                Mul(first_dir, second_dir) => self.mul(first_dir,  second_dir),
+                Read(direct) => {
+                    if self.read_interrupt(direct) {
+                        return;
+                    }
+                },
+                Write(direct) => self.write(direct),
+                JmpNonZero(check, target) => self.jmp_non_zero(check, target),
+                JmpZero(check, target) => self.jmp_zero(check, target),
+                LessThan(first_dir, second_dir, target) => self.less_than(first_dir, second_dir, target),
+                Eq(first_dir , second_dir , target) => self.eq(first_dir, second_dir, target)
+            }
+            instr = self.fetch_decode();
+        }
+    }
+
+    fn halt(&mut self) {
+        self.halted = true;
     }
 
     fn add(&mut self, first_dir: bool, second_dir: bool) {
@@ -60,7 +92,7 @@ impl IntCodeComputer {
 
     fn read(&mut self, direct: bool) {
         let mut input = String::new();
-        std::io::stdin().read_line(&mut input).unwrap();
+        self.input.read_line(&mut input).unwrap();
         let input = input.trim().parse().unwrap();
         let target = if direct {
             self.pc + 1
@@ -69,6 +101,25 @@ impl IntCodeComputer {
         };
         self.memory[target] = input;
         self.pc += 2;
+    }
+
+    fn read_interrupt(&mut self, direct: bool) -> bool {
+        let mut input = String::new();
+        //dbg!("read");
+        self.input.read_line(&mut input).unwrap();
+        if input.trim().len() == 0 {
+            //dbg!("interrupt");
+            return true;
+        }
+        let input = input.trim().parse().unwrap();
+        let target = if direct {
+            self.pc + 1
+        } else {
+            self.memory[self.pc + 1] as usize
+        };
+        self.memory[target] = input;
+        self.pc += 2;
+        false
     }
 
     fn jmp_non_zero(&mut self, check: bool, target: bool) {
@@ -130,7 +181,9 @@ impl IntCodeComputer {
     }
 
     fn write(&mut self, direct: bool) {
-        println!("{}", self.memory_get(direct, 1));
+        let num = self.memory_get(direct, 1);
+        //dbg!(&num);
+        self.output.write(format!("{}\n", num).as_bytes()).unwrap();
         self.pc += 2;
     }
 

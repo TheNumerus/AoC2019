@@ -1,6 +1,9 @@
+use std::io::{stdin, stdout};
+
 pub fn solve() {
     let program = crate::day_2::generate_program(INPUT_TEST);
-    let mut cpu = crate::day_2::IntCodeComputer::new(program);
+    let stdin = stdin();
+    let mut cpu = crate::day_2::IntCodeComputer::new(program, stdin.lock(), stdout());
     cpu.run();
 }
 
