@@ -5,7 +5,7 @@ pub fn solve() {
     print_image(&framebuffer, image.width, image.height);
 }
 
-fn print_image(framebuffer: &[i32], width: size, height: usize) {
+fn print_image(framebuffer: &[i32], width: usize, height: usize) {
     for y in 0..height {
         for x in 0..width {
             let char = match framebuffer[width * y + x] {
